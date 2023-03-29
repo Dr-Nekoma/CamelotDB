@@ -1,0 +1,4 @@
+(executable
+ (public_name CamelotDB)
+ (name main)
+ (libraries CamelotDB))

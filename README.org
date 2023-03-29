@@ -1,0 +1,13 @@
+#+TITLE: CamelotDB
+
+* About
+This is a toy RDBMS, we are not held accountable for anything that
+might happen if you are crazy enough to use it.
+
+* Requirements
+- [ ] Make data persistent (write to disk)
+- [ ] Search on the filesystem (index, scan and pagination)
+- [ ] A query language
+- [ ] Transactions & Coordinator
+- [ ] Query optimization
+- [ ] A server
