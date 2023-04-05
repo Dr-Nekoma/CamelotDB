@@ -1,1 +1,1 @@
-INSERT INTO Car (Brand, Year) VALUES ("Abc", 2022);
+INSERT Car (A, B, C) VALUES(1, "X", 2);

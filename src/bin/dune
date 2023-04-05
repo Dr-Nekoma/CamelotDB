@@ -1,7 +1,8 @@
 (executable
  (public_name CamelotDB)
  (name main)
- (libraries CamelotDB))
+ (libraries CamelotDB)
+ (preprocess (pps ppx_deriving.show ppx_deriving.std)))
 (env
  (dev
   (flags

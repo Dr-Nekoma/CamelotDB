@@ -8,7 +8,6 @@
 %token LEFT_PAREN
 %token RIGHT_PAREN
 %token INSERT
-%token INTO
 %token VALUES
 %token COMMA
 %token SEMICOLON
@@ -25,14 +24,13 @@ program:
   ;
 
 statement:
-  | INSERT; INTO; table_name = IDENT;
-    columns_names = option(table_fields); VALUES; LEFT_PAREN; values = separated_nonempty_list(COMMA, value); RIGHT_PAREN; SEMICOLON
+  | INSERT; relation_name = IDENT; attribute_names = option(attribute_fields); VALUES; LEFT_PAREN; values = separated_nonempty_list(COMMA, value); RIGHT_PAREN; SEMICOLON
     {
-      Ast.Insert { table_name; columns_names; values }
+      Ast.Insert { relation_name; attribute_names; values }
     }
   ;
 
-table_fields: LEFT_PAREN; fs = separated_nonempty_list(COMMA, IDENT); RIGHT_PAREN
+attribute_fields: LEFT_PAREN; fs = separated_nonempty_list(COMMA, IDENT); RIGHT_PAREN
     {
       fs
     }

@@ -1,3 +1,5 @@
+open CamelotDB
+
 let () =
   let fc = open_in "examples/insert.cml" in
   let content = try Some(input_line fc) 
@@ -7,6 +9,5 @@ let () =
   | None -> print_endline "File not found xD"
   | Some(c) -> match Parse.parse c with
                | None -> print_endline "Could not parse file xD"
-               | Some(ast) -> Format.printf "Statement: %a@." pp ast
-  print_endline "Hello, World!"
+               | Some(ast) -> Format.printf "%a" Ast.pp_statement ast
 

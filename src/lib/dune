@@ -1,11 +1,12 @@
 (library
  (name CamelotDB)
- (preprocess ppx_deriving))
+ (preprocess (pps ppx_deriving.show ppx_deriving.std)))
 
 (ocamllex lexer)
 
 (menhir
- (modules parser))
+ (modules parser)
+ (flags --trace))
  
 (env
  (dev
