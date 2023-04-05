@@ -19,7 +19,7 @@
     {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [ ocaml ocamlformat ] ++
-          (with pkgs.ocamlPackages; [ dune_3 odoc ocaml-lsp ]);
+          (with pkgs.ocamlPackages; [ dune_3 odoc ocaml-lsp menhir utop ppx_deriving ]);
 
         shellHook = ''
           ${pkgs.ocaml}/bin/ocaml --version

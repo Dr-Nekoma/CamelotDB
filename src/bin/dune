@@ -2,3 +2,7 @@
  (public_name CamelotDB)
  (name main)
  (libraries CamelotDB))
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A))))
