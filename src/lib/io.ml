@@ -1,10 +1,10 @@
+module StringMap = Map.Make(String)
+
 module Write = struct
   open Ast
   open Type
   open Entity
-  open Fsharp
 
-  module StringMap = Map.Make(String)
   type row = Ast.value StringMap.t
 
   let convert_literal (table: Entity.field_metadata Entity.Table_Info.t) (attribute_name: string) (literal: value) =
@@ -19,7 +19,7 @@ module Write = struct
        print_newline ();
        let serialized_size = Type.to_byte_size Type.TInteger32 in
        let serialized_value = Bytes.create serialized_size in
-       Bytes.set_int32_ne serialized_value 0 @@ Int32.of_int(elem);
+       Bytes.set_int32_ne serialized_value 0 @@ elem;
        print_bytes serialized_value;
        print_newline ();
        (pos, serialized_value)
@@ -45,8 +45,33 @@ module Write = struct
     let out_channel = open_out_bin (Printf.sprintf "/tmp/%s.ndf" table_name) in
     output_bytes out_channel serialized_row;
     close_out out_channel;
+  
 end
-(*   let table = Entity.Table_Info.empty |> Entity.Table_Info.add "name" ({position = 0; type' = Type.TString {size = 10}}: Entity.field_metadata) *)
-(*   let x = convert_literal table "name" (VString "Nathan") *)
-(*   let schema () = Schema.Logical_Map.empty |> Schema.Logical_Map.add "person" (Entity.Table table) *)
 
+module Read = struct
+  open Ast
+  open Type
+  open Entity
+
+  type column_map = Ast.value StringMap.t
+  
+  let deserialize (schema: Schema.t) (table_name: string) (stream: bytes): column_map =
+    let (Some (Table table_info)) = Schema.Logical_Map.find_opt table_name schema in
+    let columns  =
+      Table_Info.to_seq table_info
+      |> List.of_seq
+      |> List.sort (fun (_, p1) (_, p2) -> compare p1.position p2.position)
+      |> List.map (fun (name, {type'=type'; _}) -> (type', name))
+    in
+    
+    let rec reconstruct_columns acc ((type', name)::types_rest) stream =
+      let size = Type.to_byte_size type' in
+      let (name, literal) = (name, from_bytes type' (Bytes.sub stream 0 size)) in
+      let ret = (name, literal) :: acc in
+      if types_rest <> [] then
+        reconstruct_columns ret types_rest (Bytes.sub stream size (Bytes.length stream - size))
+      else
+        ret
+    in reconstruct_columns [] columns stream |> List.to_seq |> StringMap.of_seq
+  
+end

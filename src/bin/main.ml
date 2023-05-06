@@ -1,5 +1,5 @@
 open CamelotDB
-open Io.Write
+open Io
 open Ast
 
 (* let () = *)
@@ -16,5 +16,33 @@ open Ast
 let () =
   let table = Entity.Table_Info.empty |> Entity.Table_Info.add "name" ({position = 0; type' = Type.TString {size = 10}}: Entity.field_metadata) |> Entity.Table_Info.add "age" ({position = 1; type' = Type.TInteger32}: Entity.field_metadata) in
   let schema = Schema.Logical_Map.empty |> Schema.Logical_Map.add "person" (Entity.Table table) in
-  let row = StringMap.empty |> StringMap.add "name" (Ast.VString "Magueta") |> StringMap.add "age" (Ast.VInteger 24) in
-  write_row_on_disk schema "person" row;
+  let row = StringMap.empty |> StringMap.add "name" (Ast.VString "Magueta") |> StringMap.add "age" (Ast.VInteger 24l) in
+  Write.write_row_on_disk schema "person" row;
+
+(*
+open CamelotDB
+open Ast
+open Type
+open Io
+open Io.Write
+open Io.Read
+
+let table =
+  Entity.Table_Info.empty
+  |> Entity.Table_Info.add "name" ({position = 0; type' = Type.TString {size = 10}}: Entity.field_metadata)
+  |> Entity.Table_Info.add "age" ({position = 1; type' = Type.TInteger32}: Entity.field_metadata)
+  
+let nathan_row =
+  StringMap.empty
+  |> StringMap.add "name" (VString "Nathan")
+  |> StringMap.add "age" (VInteger 23l)
+  
+let schema =
+  Schema.Logical_Map.empty
+  |> Schema.Logical_Map.add "person" (Entity.Table table)
+
+let serialized_nathan = convert_row schema "person" nathan_row
+
+deserialize schema "person" serialized_nathan
+
+*)

@@ -2,13 +2,15 @@
   open Ast
 %}
 
-%token <int> INT
+%token <int32> INT
+%token <string> TYPE
 %token <string> STRING
 %token <string> IDENT
+%token INSERT
+%token CREATE
+%token RELATION
 %token LEFT_PAREN
 %token RIGHT_PAREN
-%token INSERT
-%token VALUES
 %token COMMA
 %token SEMICOLON
 %token EOF
@@ -24,7 +26,7 @@ program:
   ;
 
 statement:
-  | INSERT; relation_name = IDENT; attribute_names = option(attribute_fields); VALUES; LEFT_PAREN; values = separated_nonempty_list(COMMA, value); RIGHT_PAREN; SEMICOLON
+  | INSERT; relation_name = IDENT; attribute_names = option(attribute_fields); LEFT_PAREN; values = separated_nonempty_list(COMMA, value); RIGHT_PAREN; SEMICOLON
     {
       Ast.Insert { relation_name; attribute_names; values }
     }

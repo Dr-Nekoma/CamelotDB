@@ -11,19 +11,21 @@ let digit = ['0'-'9']
 let lower_letter = ['a'-'z']
 let upper_letter = ['A'-'Z']
 let letter = lower_letter | upper_letter
-
+let type' = ("VARCHAR"|"INTEGER")
 let ident = letter (letter | '_')*
 let upper_ident = upper_letter (letter '_')*
 let int = '-'? ['0'-'9'] ['0'-'9']*
 
 rule read =
   parse
+  | "INSERT"    { INSERT }
+  | "CREATE"    { CREATE }
+  | "RELATION"  { RELATION }
+  | type' { TYPE (Lexing.lexeme lexbuf) }
   | white { read lexbuf }
   | newline { read lexbuf }
-  | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
+  | int { INT (Int32.(of_string (Lexing.lexeme lexbuf))) }
   | '"'      { read_string (Buffer.create 17) lexbuf }
-  | "INSERT" { INSERT }
-  | "VALUES" { VALUES }
   | ',' { COMMA }
   | ';' { SEMICOLON }
   | '(' { LEFT_PAREN }
