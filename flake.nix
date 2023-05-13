@@ -22,7 +22,7 @@
           (with pkgs.ocamlPackages; [ dune_3 odoc opam ocaml-lsp menhir utop ppx_deriving ]);
 
         shellHook = ''
-          ${pkgs.ocaml}/bin/ocaml --version
+          ${pkgs.ocaml}/bin/ocaml --version          
         '';
       };
     });

@@ -1,1 +1,1 @@
-INSERT Car (A, B, C) VALUES(1, "X", 2);
+INSERT Person (Name STRING(10) "Nathan", Age INTEGER 23)

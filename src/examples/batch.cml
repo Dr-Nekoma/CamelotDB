@@ -1,0 +1,15 @@
+BEGIN BATCH
+
+      INSERT Car (
+      	      A INTEGER 1,
+	      B STRING(10) "X",
+	      C INTEGER 2
+      )
+
+      INSERT Person (
+      	     A STRING(5) "Y",
+	     B INTEGER 15
+
+      )
+
+END BATCH

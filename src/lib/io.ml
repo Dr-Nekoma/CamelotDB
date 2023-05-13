@@ -12,13 +12,13 @@ module Write = struct
     | VString elem, Some {position = pos; type' = Type.TString {size}} ->
        let serialized_string = Bytes.of_string elem in
        let serialized_size = Bytes.length serialized_string in
-       let serialized_value = Bytes.extend serialized_string 0 (size - serialized_size) in
+       let serialized_value = Bytes.extend serialized_string 0 ((size |> Int32.to_int) - serialized_size) in
        (pos, serialized_value)
     | VInteger elem, Some {position = pos; type' = Type.TInteger32} ->
        print_string "Hello";
        print_newline ();
        let serialized_size = Type.to_byte_size Type.TInteger32 in
-       let serialized_value = Bytes.create serialized_size in
+       let serialized_value = Bytes.create (Int32.to_int serialized_size) in
        Bytes.set_int32_ne serialized_value 0 @@ elem;
        print_bytes serialized_value;
        print_newline ();
@@ -27,7 +27,7 @@ module Write = struct
 
   let convert_row (schema: Schema.t) (table_name: string) (row: row) =
     match Schema.Logical_Map.find_opt table_name schema with
-    | Some (Table table_info) ->
+    | Some (Table (table_info, _)) ->
        StringMap.fold
          (fun key value acc -> convert_literal table_info key value :: acc)
          row
@@ -40,11 +40,18 @@ module Write = struct
     | None -> Printf.sprintf "Could not find table %s in the schema" table_name |> failwith
 
   let write_row_on_disk (schema: Schema.t) (table_name: string) (row: row) : unit =
-    let serialized_row = convert_row schema table_name row in
-    print_bytes serialized_row;
-    let out_channel = open_out_bin (Printf.sprintf "/tmp/%s.ndf" table_name) in
-    output_bytes out_channel serialized_row;
-    close_out out_channel;
+    match Schema.Logical_Map.find_opt table_name schema with
+    | Some (Table (_, row_id)) ->
+       match Schema.calculate_size schema table_name with
+       | None -> ();
+       | Some size ->
+          let serialized_row = convert_row schema table_name row in
+          let out_channel = open_out_bin (Printf.sprintf "/tmp/%s.ndf" table_name) in
+          seek_out out_channel ((Int32.mul size row_id) |> Int32.to_int);
+          output_bytes out_channel serialized_row;
+          close_out out_channel;
+    | Some _
+    | None -> failwith (Format.sprintf "Could not find table %s in the schema" table_name)
   
 end
 
@@ -56,7 +63,7 @@ module Read = struct
   type column_map = Ast.value StringMap.t
   
   let deserialize (schema: Schema.t) (table_name: string) (stream: bytes): column_map =
-    let (Some (Table table_info)) = Schema.Logical_Map.find_opt table_name schema in
+    let (Some (Table (table_info, _))) = Schema.Logical_Map.find_opt table_name schema in
     let columns  =
       Table_Info.to_seq table_info
       |> List.of_seq
@@ -65,13 +72,12 @@ module Read = struct
     in
     
     let rec reconstruct_columns acc ((type', name)::types_rest) stream =
-      let size = Type.to_byte_size type' in
+      let size = Type.to_byte_size type' |> Int32.to_int in
       let (name, literal) = (name, from_bytes type' (Bytes.sub stream 0 size)) in
       let ret = (name, literal) :: acc in
       if types_rest <> [] then
         reconstruct_columns ret types_rest (Bytes.sub stream size (Bytes.length stream - size))
       else
         ret
-    in reconstruct_columns [] columns stream |> List.to_seq |> StringMap.of_seq
-  
+    in reconstruct_columns [] columns stream |> List.to_seq |> StringMap.of_seq  
 end
