@@ -44,7 +44,17 @@ module Type = struct
   let serialize (type': t) =
     match type' with
     | TInteger32 -> "INTEGER32"
-    | TString {size = size} -> Printf.sprintf "STRING %ld" size
+    | TString {size = size} -> Printf.sprintf "STRING:%ld" size
+  let deserialize (candidate: string): t =
+    match candidate with
+    | "INTEGER" -> TInteger32
+    | other when (String.sub other 0 6 = "STRING") ->
+       String.split_on_char ':' other
+           |> List.rev
+           |> List.hd
+           |> int_of_string
+           |> fun size -> TString { size = Int32.of_int size }
+    | _ -> failwith "Unknown string to deserialize"
 end
 
 module Entity = struct
@@ -61,6 +71,30 @@ module Entity = struct
          Printf.sprintf "%s%s %d %s\n" acc name position (Type.serialize type')) table_info initial
     | Procedure -> ""
 end
+
+(*
+Example of a Schema
+[
+["TABLE Abc 134",
+ "Age 1 INTEGER32",
+ "Name 0 STRING 10"],
+[""]   
+["TABLE Person 0",
+ "Age 1 INTEGER32",
+ "Name 0 STRING 10"]
+],
+[""]
+ *)
+
+let split_groups (separator: string) (lines: string list): (string list) list =
+  let inner (elem: string) (acc: (string list) list): (string list) list =
+    if elem = separator then
+      [] :: acc
+    else
+      match acc with
+      | [] -> failwith "Something went terribly wrong xD"
+      | (first::tail) -> (elem :: first) :: tail
+  in List.fold_right inner lines [[]] |> List.filter ((<>) [])
 
 module Schema = struct
   module Logical_Map = Map.Make(String)
@@ -86,7 +120,37 @@ module Schema = struct
       with End_of_file ->
         close_in chan;
         List.rev !lines in
-    List.iter (fun x -> print_endline x;) (read_file filename)
+    let lines = read_file filename in
+    lines
+  let parse_schema (lines: string list): t =
+    let groups = split_groups "" lines in
+    let logical_map = ref Logical_Map.empty in
+    let inner (line: string) =
+      let fields = String.split_on_char ' ' line |> Array.of_list in
+      if fields.(0) = "TABLE" then
+        logical_map :=
+          !logical_map
+           |> Logical_Map.add fields.(1) (Entity.Table_Info.empty, fields.(2) |> int_of_string)
+      else
+        let initial_entity =
+          Entity.Table_Info.empty
+          |> Entity.Table_Info.add fields.(0) ({position = (fields.(1) |> int_of_string); type' = Type.TString {size = 10l}}: Entity.field_metadata)
+        in
+        logical_map :=
+          !logical_map
+          |> Logical_Map.update
+  
+        (* ["TABLE Person 134", *)
+        (*  "Age 1 INTEGER32", *)
+        (*  "Name 0 STRING(10)"], *)
+
+(*
+  A fold that the fold function that picks an element and an accumulator and we check if the acc is an empty list and
+  in that case we just spit a list of lists with x inside, otherwise you spit the head and tail and you check if the
+  head is equal to the separator and then 
+ *)  
+    
+    
 end
 
 type statement =

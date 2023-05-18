@@ -15,4 +15,4 @@ let execute (schema: Schema.t) (statement: statement) : Schema.t =
         Schema.Logical_Map.update relation_name
           (Option.map (function Entity.Table (fields, row_id) -> Entity.Table (fields, Int32.add row_id 1l))) schema
      | _ -> failwith "something"
-  | _ -> failwith "something 2"                  
+  | _ -> failwith "something 2"
