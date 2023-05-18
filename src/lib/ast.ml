@@ -1,4 +1,4 @@
-
+open Protocol_conv_xmlm
 (*
 CREATE RELATION Person
   ID INTEGER
@@ -15,7 +15,7 @@ module Type = struct
   type t =
   | TInteger32
   | TString of { size: int32 }
-  [@@deriving show]
+  [@@deriving show,of_protocol ~driver:(module Xmlm)]
   let to_byte_size (type': t) =
     match type' with
     | TInteger32 -> Int32.of_int(4)
@@ -41,20 +41,6 @@ module Type = struct
     | "STRING" -> TString { size = parameter }
     | "INTEGER" -> failwith "Integers are non-parametric types!"
     | g -> failwith (Format.sprintf "%s is not a type!" g)
-  let serialize (type': t) =
-    match type' with
-    | TInteger32 -> "INTEGER32"
-    | TString {size = size} -> Printf.sprintf "STRING:%ld" size
-  let deserialize (candidate: string): t =
-    match candidate with
-    | "INTEGER" -> TInteger32
-    | other when (String.sub other 0 6 = "STRING") ->
-       String.split_on_char ':' other
-           |> List.rev
-           |> List.hd
-           |> int_of_string
-           |> fun size -> TString { size = Int32.of_int size }
-    | _ -> failwith "Unknown string to deserialize"
 end
 
 module Entity = struct
@@ -63,13 +49,6 @@ module Entity = struct
   type t =
     | Table of field_metadata Table_Info.t * int32
     | Procedure
-  let serialize (entity: t) =
-    match entity with
-    | Table (table_info, row_id) ->
-       let initial = Printf.sprintf "%ld\n" row_id in
-       Table_Info.fold (fun name { position = position; type' = type' } acc ->
-         Printf.sprintf "%s%s %d %s\n" acc name position (Type.serialize type')) table_info initial
-    | Procedure -> ""
 end
 
 (*
@@ -105,52 +84,6 @@ module Schema = struct
        Some (Logical_Map.fold (fun _ ({type'; _}: Entity.field_metadata) (acc: int32) -> Int32.add acc @@ Type.to_byte_size type') table_info 0l)
     | Some _
     | None -> None
-  let serialize (schema: t) =
-    Logical_Map.fold (fun name entity acc ->
-        Printf.sprintf "%sTABLE %s %s\n" acc name (Entity.serialize entity)) schema ""
-  let deserialize (filename: string) =
-    print_endline filename;
-    let read_file filename = 
-      let lines = ref [] in
-      let chan = open_in filename in
-      try
-        while true; do
-          lines := input_line chan :: !lines
-        done; !lines
-      with End_of_file ->
-        close_in chan;
-        List.rev !lines in
-    let lines = read_file filename in
-    lines
-  let parse_schema (lines: string list): t =
-    let groups = split_groups "" lines in
-    let logical_map = ref Logical_Map.empty in
-    let inner (line: string) =
-      let fields = String.split_on_char ' ' line |> Array.of_list in
-      if fields.(0) = "TABLE" then
-        logical_map :=
-          !logical_map
-           |> Logical_Map.add fields.(1) (Entity.Table_Info.empty, fields.(2) |> int_of_string)
-      else
-        let initial_entity =
-          Entity.Table_Info.empty
-          |> Entity.Table_Info.add fields.(0) ({position = (fields.(1) |> int_of_string); type' = Type.TString {size = 10l}}: Entity.field_metadata)
-        in
-        logical_map :=
-          !logical_map
-          |> Logical_Map.update
-  
-        (* ["TABLE Person 134", *)
-        (*  "Age 1 INTEGER32", *)
-        (*  "Name 0 STRING(10)"], *)
-
-(*
-  A fold that the fold function that picks an element and an accumulator and we check if the acc is an empty list and
-  in that case we just spit a list of lists with x inside, otherwise you spit the head and tail and you check if the
-  head is equal to the separator and then 
- *)  
-    
-    
 end
 
 type statement =

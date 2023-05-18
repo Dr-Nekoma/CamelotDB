@@ -1,6 +1,7 @@
 (library
  (name CamelotDB)
- (preprocess (pps ppx_deriving.show ppx_deriving.std)))
+ (libraries ppx_protocol_conv_xmlm)
+ (preprocess (pps ppx_deriving.show ppx_deriving.std ppx_protocol_conv)))
 
 (ocamllex lexer)
 

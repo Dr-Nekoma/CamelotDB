@@ -2,6 +2,7 @@ open CamelotDB
 open Io
 open Ast
 open Executor
+open Protocol_conv_xmlm
 
 let () =
   let fc = open_in "examples/insert.cml" in
@@ -15,11 +16,13 @@ let () =
                | Some(ast) ->
                   let table = Entity.Table_Info.empty |> Entity.Table_Info.add "Name" ({position = 0; type' = Type.TString {size = 10l}}: Entity.field_metadata) |> Entity.Table_Info.add "Age" ({position = 1; type' = Type.TInteger32}: Entity.field_metadata) in
                   let schema = Schema.Logical_Map.empty |> Schema.Logical_Map.add "Person" (Entity.Table (table, 0l)) |> Schema.Logical_Map.add "Abc" (Entity.Table (table, 134l)) in
-                  let out_c = open_out "/tmp/schema.cms" in
-                  Schema.serialize schema
-                  |> output_string out_c;
-                  Schema.deserialize "/tmp/schema.cms";
+                  (* let out_c = open_out "/tmp/schema.cms" in *)
+                  (* Schema.serialize schema *)
+                  (* |> output_string out_c; *)
+                  (* Schema.deserialize "/tmp/schema.cms"; *)
+                  (* print_endline (Xmlm.of_string Ast.Type.TInteger32 |> Xmlm.to_string) *)
                   (* execute schema ast |> ignore; *)
+                  ()
 
 (* let () = *)
 (*   let table = Entity.Table_Info.empty |> Entity.Table_Info.add "name" ({position = 0; type' = Type.TString {size = 10}}: Entity.field_metadata) |> Entity.Table_Info.add "age" ({position = 1; type' = Type.TInteger32}: Entity.field_metadata) in *)
