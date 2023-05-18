@@ -40,7 +40,11 @@ module Type = struct
     match candidate with
     | "STRING" -> TString { size = parameter }
     | "INTEGER" -> failwith "Integers are non-parametric types!"
-    | g -> failwith (Format.sprintf "%s is not a type!" g)    
+    | g -> failwith (Format.sprintf "%s is not a type!" g)
+  let serialize (type': t) =
+    match type' with
+    | TInteger32 -> "INTEGER32"
+    | TString {size = size} -> Printf.sprintf "STRING %ld" size
 end
 
 module Entity = struct
@@ -49,6 +53,13 @@ module Entity = struct
   type t =
     | Table of field_metadata Table_Info.t * int32
     | Procedure
+  let serialize (entity: t) =
+    match entity with
+    | Table (table_info, row_id) ->
+       let initial = Printf.sprintf "%ld\n" row_id in
+       Table_Info.fold (fun name { position = position; type' = type' } acc ->
+         Printf.sprintf "%s%s %d %s\n" acc name position (Type.serialize type')) table_info initial
+    | Procedure -> ""
 end
 
 module Schema = struct
@@ -60,6 +71,22 @@ module Schema = struct
        Some (Logical_Map.fold (fun _ ({type'; _}: Entity.field_metadata) (acc: int32) -> Int32.add acc @@ Type.to_byte_size type') table_info 0l)
     | Some _
     | None -> None
+  let serialize (schema: t) =
+    Logical_Map.fold (fun name entity acc ->
+        Printf.sprintf "%sTABLE %s %s\n" acc name (Entity.serialize entity)) schema ""
+  let deserialize (filename: string) =
+    print_endline filename;
+    let read_file filename = 
+      let lines = ref [] in
+      let chan = open_in filename in
+      try
+        while true; do
+          lines := input_line chan :: !lines
+        done; !lines
+      with End_of_file ->
+        close_in chan;
+        List.rev !lines in
+    List.iter (fun x -> print_endline x;) (read_file filename)
 end
 
 type statement =
