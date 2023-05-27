@@ -2,7 +2,6 @@ open CamelotDB
 open Io
 open Ast
 open Executor
-open Protocol_conv_xmlm
 
 let () =
   let fc = open_in "examples/insert.cml" in
@@ -22,6 +21,9 @@ let () =
                   (* Schema.deserialize "/tmp/schema.cms"; *)
                   (* print_endline (Xmlm.of_string Ast.Type.TInteger32 |> Xmlm.to_string) *)
                   (* execute schema ast |> ignore; *)
+                  (* let value = Type.B 10 in *)
+                  let value = Type.TInteger32 in
+                  let _ =  (Type.primitive_to_xmlm value |> Type.primitive_of_xmlm_exn) in
                   ()
 
 (* let () = *)
