@@ -87,20 +87,46 @@ module Schema = struct
        Some (Logical_Map.fold (fun _ ({type'; _}: Entity.field_metadata) (acc: int32) -> Int32.add acc @@ Type.to_byte_size type') table_info 0l)
     | Some _
     | None -> None
-  let serialize (schema: t) : Xmlm.t =
-    let list_map = Logical_Map.to_seq schema |> List.of_seq in
+  let serialize (schema: t) =
+    let list_map = Logical_Map.to_seq schema in
     let serialized_list =
-      List.map
-        (fun (name, content) ->
+      Seq.map
+        (fun (table_name, content) ->
           match content with
           | Entity.Table (field_metadata, rowId) ->
-             let column_map = Entity.Table_Info.to_seq field_metadata |> List.of_seq in
-             let serialized_list = List.map
-               (fun (column_name, metadata) -> (column_name, Entity.field_metadata_to_xmlm metadata))
-               column_map in
-             (name, serialized_list, rowId)
+             let column_map = Entity.Table_Info.to_seq field_metadata in
+             let serialized_list =
+               Seq.map
+                 (fun (column_name, metadata) -> (column_name, Entity.field_metadata_to_xmlm metadata))
+                 column_map in
+             (table_name, serialized_list, rowId)
         )
-        list_map
+        list_map in
+
+    let serialize_1 (attributes: (string * Ezxmlm.node) Seq.t) =
+      Seq.fold_left
+        (fun (acc: string) (name_attr, attr) ->
+          Printf.sprintf "%s\nATTRIBUTE %s\n%s" acc name_attr (Ezxmlm.to_string [attr]))
+        ""
+        attributes in
+  
+    Seq.fold_left
+      (fun (acc: string) (table_name, attributes, row_id) ->
+        Printf.sprintf "%s\nTABLE %s %ld\n%s" acc table_name row_id (serialize_1 attributes))
+      ""
+      serialized_list
+
+  type 'a totally_not_a_list =
+    'a list
+      [@@deriving show, protocol ~driver:(module Xmlm)]
+
+  type ('a,'b) totally_not_a_tuple = 'a * 'b
+      [@@deriving show, protocol ~driver:(module Xmlm)]
+  
+  let deserialize (serialized_schema: string list) =
+    let tables = split_groups "--------------" serialized_schema in
+    let tables_and_attributes = List.map (split_groups "\n") tables in
+    ""
 end
 
 type statement =
